@@ -101,31 +101,37 @@ pandoc artifacts/{session_id}/FINAL_REPORT.md \
 
 ## Layout
 
+This repo is a Claude Code **marketplace** that ships a single plugin. The root holds the marketplace manifest; the plugin itself lives in `plugins/research-pipeline/`.
+
 ```
-research-pipeline/
-├── .claude-plugin/plugin.json          # plugin metadata
-├── commands/research-pipeline.md       # /research-pipeline slash command
-├── agents/
-│   ├── aspect-researcher.md            # parallel WebSearch worker
-│   ├── aspect-researcher-exa.md        # sequential Exa worker
-│   └── report-generator.md             # synthesis → final markdown
-├── skills/
-│   ├── manager-research.md             # 5-phase orchestrator
-│   ├── research-planner.md             # topic → aspects + queries
-│   ├── synthesis.md                    # cross-aspect aggregation
-│   ├── quality-gate.md                 # PASS/WARN/FAIL verdict
-│   ├── grounding-protocol.md           # no-hallucination rules
-│   ├── silence-protocol.md             # clean parallel execution
-│   ├── search-safeguard.md             # retry + jitter for search APIs
-│   ├── io-yaml-safe.md                 # safe YAML writes
-│   ├── yaml-repair.md                  # auto-fix broken YAML
-│   ├── phase-checkpoint.md             # git tag per phase
-│   ├── resume-checkpoint.md            # restore from checkpoint
-│   └── anti-cringe.md                  # report style guide
-├── workflows/research.yaml             # declarative workflow definition
-└── templates/skills/                   # skill scaffolding templates
-    ├── checkpoint.template.md
-    └── repair.template.md
+research-pipeline/                             # marketplace root
+├── .claude-plugin/marketplace.json            # marketplace catalog
+├── README.md
+└── plugins/
+    └── research-pipeline/                     # the plugin
+        ├── .claude-plugin/plugin.json         # plugin metadata
+        ├── commands/research-pipeline.md      # /research-pipeline slash command
+        ├── agents/
+        │   ├── aspect-researcher.md           # parallel WebSearch worker
+        │   ├── aspect-researcher-exa.md       # sequential Exa worker
+        │   └── report-generator.md            # synthesis → final markdown
+        ├── skills/
+        │   ├── manager-research.md            # 5-phase orchestrator
+        │   ├── research-planner.md            # topic → aspects + queries
+        │   ├── synthesis.md                   # cross-aspect aggregation
+        │   ├── quality-gate.md                # PASS/WARN/FAIL verdict
+        │   ├── grounding-protocol.md          # no-hallucination rules
+        │   ├── silence-protocol.md            # clean parallel execution
+        │   ├── search-safeguard.md            # retry + jitter for search APIs
+        │   ├── io-yaml-safe.md                # safe YAML writes
+        │   ├── yaml-repair.md                 # auto-fix broken YAML
+        │   ├── phase-checkpoint.md            # git tag per phase
+        │   ├── resume-checkpoint.md           # restore from checkpoint
+        │   └── anti-cringe.md                 # report style guide
+        ├── workflows/research.yaml            # declarative workflow definition
+        └── templates/skills/                  # skill scaffolding templates
+            ├── checkpoint.template.md
+            └── repair.template.md
 ```
 
 ## Source quality model
