@@ -1,0 +1,40 @@
+{
+  "name": "research-pipeline",
+  "owner": {
+    "name": "umar-s"
+  },
+  "metadata": {
+    "description": "Multi-phase parallel research pipeline for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "research-pipeline",
+      "source": ".",
+      "description": "Multi-phase parallel research pipeline — decompose topic → research aspects in parallel → synthesize → quality gate → grounded report. Includes source tiering, slop detection, git-based checkpointing, and WebSearch/Exa backends.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Sergei",
+        "email": "sergei.bitsmedia@gmail.com"
+      },
+      "repository": "https://github.com/umar-s/research-pipeline",
+      "license": "MIT",
+      "keywords": [
+        "research",
+        "deep-research",
+        "parallel-agents",
+        "subagent-orchestration",
+        "exa",
+        "websearch",
+        "quality-gate"
+      ],
+      "category": "research",
+      "tags": [
+        "research",
+        "parallel-execution",
+        "orchestration",
+        "report-generation"
+      ]
+    }
+  ]
+}
