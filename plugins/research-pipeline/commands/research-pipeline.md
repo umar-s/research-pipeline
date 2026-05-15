@@ -1,10 +1,10 @@
 ---
-description: Run multi-phase research pipeline - decompose topic, research aspects in parallel, synthesize, quality gate, then grounded report
-argument-hint: [quick|medium|deep] [exa] topic
-allowed-tools: Skill, Read, Write, Glob, Task, TaskOutput, Bash
+description: Run the multi-phase research pipeline (decompose → parallel research → synthesis → quality gate → grounded report)
+argument-hint: "[quick|medium|deep] [exa] \"topic\""
+allowed-tools: ["Skill", "Read", "Write", "Bash", "Glob", "Task", "TaskOutput"]
 ---
 
-# /deep-research
+# /research-pipeline
 
 Run the deep research pipeline over `$ARGUMENTS`.
 
@@ -12,9 +12,9 @@ Run the deep research pipeline over `$ARGUMENTS`.
 
 Parse `$ARGUMENTS` left-to-right:
 
-1. **Depth keyword** (optional, first token): `quick` -> 3 aspects, `medium` (default) -> 5 aspects, `deep` -> 7 aspects. Strip it if present.
-2. **Search mode keyword** (optional, next token): `exa` -> use Exa MCP (sequential, requires `EXA_API_KEY` and Exa MCP server configured). Otherwise default to built-in `WebSearch` (parallel). Strip if present.
-3. **Topic** - everything remaining, with surrounding quotes stripped. Must be non-empty.
+1. **Depth keyword** (optional, first token): `quick` → 3 aspects, `medium` (default) → 5 aspects, `deep` → 7 aspects. Strip it if present.
+2. **Search mode keyword** (optional, next token): `exa` → use Exa MCP (sequential, requires `EXA_API_KEY` and Exa MCP server configured). Otherwise default to built-in `WebSearch` (parallel). Strip if present.
+3. **Topic** — everything remaining, with surrounding quotes stripped. Must be non-empty.
 
 If topic is empty after parsing, ask the user for one and stop.
 
@@ -41,7 +41,7 @@ If topic is empty after parsing, ask the user for one and stop.
 
 ## Run the pipeline
 
-Invoke the orchestrator skill - it handles all 5 phases, checkpointing, and recovery:
+Invoke the orchestrator skill — it handles all 5 phases, checkpointing, and recovery:
 
 ```
 Skill(skill: "research-pipeline:manager-research", args: "topic={topic} depth={depth} search_mode={search_mode} session_id={session_id}")
@@ -51,7 +51,7 @@ The skill resolves agent files via `${CLAUDE_PLUGIN_ROOT}/agents/...` so it work
 
 ## Final deliverable
 
-`artifacts/{session_id}/FINAL_REPORT.md` - fully sourced markdown report. To produce a PDF:
+`artifacts/{session_id}/FINAL_REPORT.md` — fully sourced markdown report. To produce a PDF:
 
 ```bash
 pandoc artifacts/{session_id}/FINAL_REPORT.md -o artifacts/{session_id}/FINAL_REPORT.pdf --pdf-engine=xelatex
@@ -60,8 +60,8 @@ pandoc artifacts/{session_id}/FINAL_REPORT.md -o artifacts/{session_id}/FINAL_RE
 ## Examples
 
 ```
-/deep-research "AI agents orchestration patterns"
-/deep-research quick "REST API design best practices"
-/deep-research deep "Trade-offs between microservices and monoliths in 2026"
-/deep-research deep exa "Satellite QKD polarization calibration"
+/research-pipeline "AI agents orchestration patterns"
+/research-pipeline quick "REST API design best practices"
+/research-pipeline deep "Trade-offs between microservices and monoliths in 2026"
+/research-pipeline deep exa "Satellite QKD polarization calibration"
 ```
