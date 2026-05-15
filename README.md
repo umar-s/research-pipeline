@@ -45,11 +45,17 @@ In Claude Code, add the directory as a local marketplace:
 /plugin install research-pipeline
 ```
 
-After install, restart Claude Code so the new slash command is registered. Verify:
+After install, **fully restart Claude Code** (exit the session and start a new one — `/reload-plugins` is not enough; slash commands are only registered at session start).
+
+## Invocation syntax
+
+Claude Code namespaces plugin slash commands as `/<plugin>:<command>`. Since this plugin is `research-pipeline` and the command file is `research-pipeline.md`, the full invocation is:
 
 ```
-/research-pipeline "test topic"
+/research-pipeline:research-pipeline [quick|medium|deep] [exa] "topic"
 ```
+
+Claude Code's fuzzy matcher also accepts shorter forms like `/research-pipeline:research` or `/research-pipeline:r` — it will resolve to the single command in this plugin and may ask you to confirm before running.
 
 ## Prerequisites
 
@@ -85,11 +91,13 @@ Works out of the box. Built-in `WebSearch`/`WebFetch` tools must be allowed in y
 ## Usage
 
 ```
-/research-pipeline "topic"                              # medium depth, WebSearch
-/research-pipeline quick "topic"                        # 3 aspects
-/research-pipeline deep "topic"                         # 7 aspects
-/research-pipeline deep exa "topic"                     # 7 aspects via Exa
+/research-pipeline:research-pipeline "topic"                 # medium depth, WebSearch
+/research-pipeline:research-pipeline quick "topic"           # 3 aspects
+/research-pipeline:research-pipeline deep "topic"            # 7 aspects
+/research-pipeline:research-pipeline deep exa "topic"        # 7 aspects via Exa
 ```
+
+Tab completion in Claude Code helps a lot — type `/research-pipeline:` and pick from the suggestions.
 
 Convert the resulting markdown report to PDF (optional):
 
