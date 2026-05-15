@@ -28,7 +28,7 @@ All outputs land in `./artifacts/{session_id}/` of the current project. Nothing 
 ### Option A — local marketplace (one machine)
 
 ```bash
-git clone https://github.com/<your-user>/research-pipeline ~/Project/research-pipeline
+git clone https://github.com/umar-s/research-pipeline ~/Project/research-pipeline
 ```
 
 In Claude Code, add the directory as a local marketplace:
@@ -41,7 +41,7 @@ In Claude Code, add the directory as a local marketplace:
 ### Option B — direct from GitHub
 
 ```
-/plugin marketplace add <your-user>/research-pipeline
+/plugin marketplace add umar-s/research-pipeline
 /plugin install research-pipeline
 ```
 
@@ -151,7 +151,7 @@ The slash command is `/research-pipeline` (not `/research`) to avoid colliding w
 
 ## Origin
 
-Extracted from the satellite-QKD polarization-calibration research project at `/home/serpens/Project/Research`, then refactored to be portable across projects via `${CLAUDE_PLUGIN_ROOT}` path resolution.
+Extracted from the satellite-QKD polarization-calibration research project, then refactored to be portable across projects via `${CLAUDE_PLUGIN_ROOT}` path resolution.
 
 ## License
 
