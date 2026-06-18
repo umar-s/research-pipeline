@@ -1,0 +1,8 @@
+{
+  "name": "voxscribe",
+  "version": "1.0.0",
+  "description": "Transcribe audio or video files to text locally with openai-whisper. Accepts an audio path directly, or a video path (extracts the audio track via ffmpeg first). Emits .txt + timestamped .srt/.vtt + .json. Auto-detects GPU VRAM and falls back to CPU, auto-detects language, and guards against silent empty/no-speech output.",
+  "author": { "name": "Sergei", "email": "sergei.bitsmedia@gmail.com" },
+  "license": "MIT",
+  "keywords": ["transcription", "whisper", "speech-to-text", "subtitles", "ffmpeg", "audio", "video"]
+}
