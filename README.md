@@ -1,3 +1,22 @@
+# research-pipeline marketplace
+
+A Claude Code **marketplace** that ships two plugins:
+
+- **[research-pipeline](#research-pipeline)** — multi-phase parallel research: decompose a topic into independent aspects, research them in parallel, synthesize, quality-gate, and produce a fully-cited final report.
+- **[voxscribe](#voxscribe)** — local audio/video → text transcription via `openai-whisper` (+`ffmpeg` for video), with GPU/CPU auto-selection, language auto-detect, and an output-sanity guard.
+
+Add the marketplace once, then install either plugin:
+
+```
+/plugin marketplace add ~/Project/research-pipeline
+/plugin install research-pipeline
+/plugin install voxscribe
+```
+
+After install, **fully restart Claude Code** (exit the session and start a new one — slash commands and skills are only registered at session start).
+
+---
+
 # research-pipeline
 
 A multi-phase parallel research pipeline for Claude Code, packaged as a plugin. Decomposes a topic into independent aspects, researches them in parallel by dedicated worker agents, synthesizes findings across aspects, runs a quality gate, and produces a fully-cited final report.
@@ -109,37 +128,43 @@ pandoc artifacts/{session_id}/FINAL_REPORT.md \
 
 ## Layout
 
-This repo is a Claude Code **marketplace** that ships a single plugin. The root holds the marketplace manifest; the plugin itself lives in `plugins/research-pipeline/`.
+This repo is a Claude Code **marketplace** that ships two plugins. The root holds the marketplace manifest; each plugin lives under `plugins/`.
 
 ```
 research-pipeline/                             # marketplace root
-├── .claude-plugin/marketplace.json            # marketplace catalog
+├── .claude-plugin/marketplace.json            # marketplace catalog (both plugins)
 ├── README.md
 └── plugins/
-    └── research-pipeline/                     # the plugin
+    ├── research-pipeline/                     # plugin 1
+    │   ├── .claude-plugin/plugin.json         # plugin metadata
+    │   ├── commands/research-pipeline.md      # /research-pipeline slash command
+    │   ├── agents/
+    │   │   ├── aspect-researcher.md           # parallel WebSearch worker
+    │   │   ├── aspect-researcher-exa.md       # sequential Exa worker
+    │   │   └── report-generator.md            # synthesis → final markdown
+    │   ├── skills/
+    │   │   ├── manager-research.md            # 5-phase orchestrator
+    │   │   ├── research-planner.md            # topic → aspects + queries
+    │   │   ├── synthesis.md                   # cross-aspect aggregation
+    │   │   ├── quality-gate.md                # PASS/WARN/FAIL verdict
+    │   │   ├── grounding-protocol.md          # no-hallucination rules
+    │   │   ├── silence-protocol.md            # clean parallel execution
+    │   │   ├── search-safeguard.md            # retry + jitter for search APIs
+    │   │   ├── io-yaml-safe.md                # safe YAML writes
+    │   │   ├── yaml-repair.md                 # auto-fix broken YAML
+    │   │   ├── phase-checkpoint.md            # git tag per phase
+    │   │   ├── resume-checkpoint.md           # restore from checkpoint
+    │   │   └── anti-cringe.md                 # report style guide
+    │   ├── workflows/research.yaml            # declarative workflow definition
+    │   └── templates/skills/                  # skill scaffolding templates
+    │       ├── checkpoint.template.md
+    │       └── repair.template.md
+    └── voxscribe/                             # plugin 2
         ├── .claude-plugin/plugin.json         # plugin metadata
-        ├── commands/research-pipeline.md      # /research-pipeline slash command
-        ├── agents/
-        │   ├── aspect-researcher.md           # parallel WebSearch worker
-        │   ├── aspect-researcher-exa.md       # sequential Exa worker
-        │   └── report-generator.md            # synthesis → final markdown
-        ├── skills/
-        │   ├── manager-research.md            # 5-phase orchestrator
-        │   ├── research-planner.md            # topic → aspects + queries
-        │   ├── synthesis.md                   # cross-aspect aggregation
-        │   ├── quality-gate.md                # PASS/WARN/FAIL verdict
-        │   ├── grounding-protocol.md          # no-hallucination rules
-        │   ├── silence-protocol.md            # clean parallel execution
-        │   ├── search-safeguard.md            # retry + jitter for search APIs
-        │   ├── io-yaml-safe.md                # safe YAML writes
-        │   ├── yaml-repair.md                 # auto-fix broken YAML
-        │   ├── phase-checkpoint.md            # git tag per phase
-        │   ├── resume-checkpoint.md           # restore from checkpoint
-        │   └── anti-cringe.md                 # report style guide
-        ├── workflows/research.yaml            # declarative workflow definition
-        └── templates/skills/                  # skill scaffolding templates
-            ├── checkpoint.template.md
-            └── repair.template.md
+        ├── scripts/transcribe.sh              # ffmpeg + whisper mechanics
+        └── skills/voxscribe/
+            ├── SKILL.md                       # triggers + how-to-run
+            └── references/options.md          # models, VRAM, exit codes, install
 ```
 
 ## Source quality model
@@ -166,6 +191,48 @@ The slash command is `/research-pipeline` (not `/research`) to avoid colliding w
 ## Origin
 
 Extracted from the satellite-QKD polarization-calibration research project, then refactored to be portable across projects via `${CLAUDE_PLUGIN_ROOT}` path resolution.
+
+---
+
+# voxscribe
+
+Local audio/video → text transcription for Claude Code. A thin, robust wrapper over [`openai-whisper`](https://github.com/openai/whisper) (plus `ffmpeg` to pull the audio track out of video). Give it an audio path directly, or a video path — it extracts the audio first — and it writes the transcript next to the input file.
+
+## What it does
+
+- Accepts **audio** (`.mp3`/`.wav`/`.m4a`/...) directly, or **video** (`.mp4`/`.mkv`/...) — for video it extracts a 16 kHz mono wav via `ffmpeg` first.
+- Cover-art aware: a tagged podcast `.mp3` (album art = an `attached_pic` video stream) is correctly treated as audio, not video.
+- **GPU/CPU auto-selection** — reads free VRAM via `nvidia-smi` and picks `cuda` only if the chosen model fits (with headroom), else falls back to `cpu`. Defaults to the `small` model, which fits common 4 GB GPUs (`medium` would OOM them).
+- **Language auto-detect** by default; force with `--language ru` / `--language en` only when you are certain (a wrong forced language makes whisper hallucinate).
+- **Output-sanity guard** — whisper exits `0` even on silent/no-speech input; voxscribe checks the result and exits `4` with a WARNING instead of a silent false success.
+- Emits `.txt` (plain transcript), `.srt` / `.vtt` (timestamped subtitles), `.json` (segments + timestamps), and `.tsv`.
+
+## Install
+
+```
+/plugin marketplace add ~/Project/research-pipeline
+/plugin install voxscribe
+```
+
+Then **fully restart Claude Code**. Requires `openai-whisper` and `ffmpeg`/`ffprobe` on `PATH`:
+
+```bash
+pipx install openai-whisper        # or: pip install -U openai-whisper
+sudo apt install ffmpeg            # Debian/Ubuntu  (macOS: brew install ffmpeg)
+```
+
+## Usage
+
+The plugin's `voxscribe` skill triggers on transcription requests (e.g. "transcribe this", "расшифруй интервью", "mp3 to text", or a media path with intent to get its text). It resolves the bundled script and runs it. You can also invoke the script directly:
+
+```bash
+bash plugins/voxscribe/scripts/transcribe.sh interview.mp4
+bash plugins/voxscribe/scripts/transcribe.sh lecture.mp3 --model medium --language ru
+```
+
+Options: `--model` (tiny/base/small/medium/large), `--language` (auto/ru/en/...), `--device` (auto/cpu/cuda), `--out-dir`, `--formats`, `--keep-audio`. Exit codes: `0` success, `1` usage/input error, `2` missing dependency, `3` video has no audio, `4` empty/no-speech transcript.
+
+See [`plugins/voxscribe/skills/voxscribe/SKILL.md`](plugins/voxscribe/skills/voxscribe/SKILL.md) and [`references/options.md`](plugins/voxscribe/skills/voxscribe/references/options.md) for models, VRAM logic, language codes, and the supported environment.
 
 ## License
 

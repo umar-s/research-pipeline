@@ -35,6 +35,18 @@
         "orchestration",
         "report-generation"
       ]
+    },
+    {
+      "name": "voxscribe",
+      "source": "./plugins/voxscribe",
+      "description": "Local audio/video → text transcription via openai-whisper. Audio path direct, video path via ffmpeg audio-extract. Emits txt + srt/vtt + json. GPU-VRAM-aware device fallback, language auto-detect, and an output-sanity guard against silent no-speech transcripts.",
+      "version": "1.0.0",
+      "author": { "name": "Sergei", "email": "sergei.bitsmedia@gmail.com" },
+      "repository": "https://github.com/umar-s/research-pipeline",
+      "license": "MIT",
+      "keywords": ["transcription", "whisper", "speech-to-text", "subtitles", "ffmpeg"],
+      "category": "media",
+      "tags": ["transcription", "whisper", "audio", "video"]
     }
   ]
 }
