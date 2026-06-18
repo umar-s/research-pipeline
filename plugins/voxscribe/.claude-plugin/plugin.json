@@ -1,8 +1,8 @@
 {
   "name": "voxscribe",
-  "version": "1.0.0",
-  "description": "Transcribe audio or video files to text locally with openai-whisper. Accepts an audio path directly, or a video path (extracts the audio track via ffmpeg first). Emits .txt + timestamped .srt/.vtt + .json. Auto-detects GPU VRAM and falls back to CPU, auto-detects language, and guards against silent empty/no-speech output.",
+  "version": "2.0.0",
+  "description": "Transcribe audio/video to readable Russian text via faster-whisper on CPU. Three modes: (1) lecture — transcribe + stitch into paragraphs → .md; (2) dialogue — transcribe + pyannote speaker diarization + sbert punctuation restoration → dialogue with em-dashes; (3) folder — discover audio/video files and fan out to parallel subagents. Video inputs (.mp4/.mkv/etc.) are auto-extracted to wav via ffmpeg. Idempotent (skips already-transcribed files), atomic .partial→rename writes, output-sanity guard against silent/no-speech false-greens.",
   "author": { "name": "Sergei", "email": "sergei.bitsmedia@gmail.com" },
   "license": "MIT",
-  "keywords": ["transcription", "whisper", "speech-to-text", "subtitles", "ffmpeg", "audio", "video"]
+  "keywords": ["transcription", "faster-whisper", "speech-to-text", "diarization", "pyannote", "russian", "ffmpeg", "audio", "video", "parallel-agents"]
 }

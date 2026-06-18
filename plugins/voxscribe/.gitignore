@@ -1,0 +1,6 @@
+# uv test-runtime artifacts
+.venv/
+.pytest_cache/
+**/__pycache__/
+*.pyc
+uv.lock

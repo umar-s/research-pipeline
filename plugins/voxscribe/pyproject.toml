@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+markers = [
+    "slow: tests that download models or run pyannote (skipped by default)",
+]
+testpaths = ["scripts/tests"]

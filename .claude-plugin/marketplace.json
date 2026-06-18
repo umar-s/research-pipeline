@@ -39,14 +39,14 @@
     {
       "name": "voxscribe",
       "source": "./plugins/voxscribe",
-      "description": "Local audio/video → text transcription via openai-whisper. Audio path direct, video path via ffmpeg audio-extract. Emits txt + srt/vtt + json. GPU-VRAM-aware device fallback, language auto-detect, and an output-sanity guard against silent no-speech transcripts.",
-      "version": "1.0.0",
+      "description": "Russian-first audio/video → readable text via faster-whisper on CPU. Three modes: lecture (transcribe + paragraph stitching → .md), dialogue (transcribe + pyannote diarization + sbert punctuation → speaker turns with em-dashes), folder (list files and fan out to parallel subagents). Auto-extracts wav from video via ffmpeg, idempotent, atomic writes, no-speech guard.",
+      "version": "2.0.0",
       "author": { "name": "Sergei", "email": "sergei.bitsmedia@gmail.com" },
       "repository": "https://github.com/umar-s/research-pipeline",
       "license": "MIT",
-      "keywords": ["transcription", "whisper", "speech-to-text", "subtitles", "ffmpeg"],
+      "keywords": ["transcription", "faster-whisper", "speech-to-text", "diarization", "pyannote", "russian", "ffmpeg"],
       "category": "media",
-      "tags": ["transcription", "whisper", "audio", "video"]
+      "tags": ["transcription", "faster-whisper", "diarization", "russian", "parallel-agents"]
     }
   ]
 }

@@ -1,132 +1,138 @@
-# voxscribe — options reference
+# voxscribe — options & exit codes reference
 
-Detailed reference for the `transcribe.sh` script: model selection, device/VRAM logic,
-language handling, long-file tactics, the output-sanity guard, exit codes, installation,
-and the supported environment. Loaded lazily — read this only when you need the deeper
-detail behind a flag.
+Engine-level detail for the bundled scripts. Read this only when you need to debug a
+specific flag interaction or exit code.
 
 ## Models
 
-`openai-whisper` ships five base sizes (plus `.en` English-only variants and a `turbo`
-model in recent releases). Pick by the trade-off between VRAM, speed, and accuracy.
+faster-whisper exposes the OpenAI Whisper model family plus the Distil-Whisper variants
+through `ctranslate2`. The model name is passed verbatim to `WhisperModel(model_size_or_path=...)`.
 
-| Model | Approx VRAM | Relative speed | Quality (incl. Russian) |
+| Model | CPU int8 RAM | Russian quality | When to pick |
 |---|---|---|---|
-| `tiny` | ~1 GB | ~10× fastest | Weak. Frequent errors on accented or noisy Russian; usable only for rough drafts or keyword spotting. |
-| `base` | ~1 GB | ~7× | Better than tiny but still shaky on Russian morphology and names. Good "fast pass" on long files. |
-| `small` | ~2 GB | ~4× | **Default.** Solid Russian and English; a good accuracy/speed balance that fits most 4 GB GPUs. |
-| `medium` | ~5 GB | ~2× | Noticeably better Russian, especially names/terms and noisy audio — but needs a real GPU. |
-| `large` | ~10 GB | 1× (baseline) | Best quality, including hard Russian audio. Heavy: a sizeable GPU, or very slow on CPU. |
+| `tiny` | ~0.5 GB | Weak. Names/morphology break. | Throwaway draft, keyword skim. |
+| `base` | ~1 GB | Better but still shaky on Russian. | Quick first pass to confirm the file is what you expect. |
+| `small` | ~1.5 GB | Solid for English; passable for Russian. | Mixed-language calls; tight RAM. |
+| `medium` | ~3 GB | Notably better Russian, especially proper names. | Day-to-day if `large-v3` is too slow. |
+| `large-v3` | ~5 GB | **Default.** Best Russian quality currently available in CTranslate2. | Tafsir lectures, interviews, anything keeping. |
 
-Notes:
+Tip: `--model distil-large-v3` (Distil-Whisper) is ~2× faster than `large-v3` with a small
+accuracy drop on Russian. Try when wall-time matters more than the last 5% of accuracy.
 
-- `.en` variants (`tiny.en`, `base.en`, `small.en`, `medium.en`) are English-only and a bit
-  more accurate for English — do not use them for Russian or mixed-language audio.
-- Russian benefits more than English from going up a size; if a `small` transcript is rough
-  on a Russian recording, `--model medium` is the usual next step (GPU permitting).
-- The relative-speed numbers are rough rules of thumb, not benchmarks; real throughput
-  depends heavily on CPU vs GPU and on the recording.
+## Compute types
 
-## Device and VRAM logic
+Passed as `--compute` to `transcribe_one.py` and forwarded as `compute_type` to
+`WhisperModel(...)`:
 
-`--device auto` (the default) resolves the device for you:
+| `--compute` | Where it makes sense |
+|---|---|
+| `int8` | **Default** for CPU. Fast, low memory, accurate enough for `large-v3`. |
+| `int8_float16` | CUDA with limited VRAM. Whisper internals in fp16, K/V cache in int8. |
+| `float16` | CUDA with plenty of VRAM. Slightly higher quality than int8 on long files. |
+| `float32` | CPU when you suspect int8 quantization artifacts. Slow. |
 
-1. If `nvidia-smi` is absent, the device is **CPU**.
-2. If `nvidia-smi` is present, the script reads the **free** VRAM of the first GPU
-   (numeric-guarded against `[N/A]`, empty, or multi-GPU output) and compares it against the
-   model's estimated need **plus a 15% headroom** (`need_mb = base * 115 / 100`). This avoids
-   razor-thin flips where a model "just barely" fits and then OOMs mid-run.
-3. If free VRAM is enough → **cuda**; otherwise the script prints why and falls back to **CPU**.
+## Device selection (`--device`)
 
-On CPU the script also passes `--fp16 False` (half precision is a GPU feature; forcing it on
-CPU triggers a noisy warning and no speedup).
+`cpu` (default), `cuda`, or `auto`. `auto` doesn't currently do VRAM-aware fallback —
+faster-whisper itself will OOM rather than gracefully degrade — so pin to `cpu` or `cuda`
+explicitly when running on shared hardware.
 
-You can override detection entirely with `--device cpu` or `--device cuda`.
+For CUDA, voxscribe preloads `nvidia-cublas-cu12` and `nvidia-cudnn-cu12` from the active
+Python's site-packages so ctranslate2 finds them without a system-wide CUDA install. The
+preload is a no-op when those wheels are absent (the common CPU case).
 
-### Why `small` is the default
+## Language (`--language`)
 
-`small` (~2 GB) fits comfortably on a common 4 GB consumer GPU with headroom to spare, while
-`medium` (~5 GB) **OOMs a 4 GB GPU** outright. On CPU every size runs, but `medium`/`large`
-are significantly slower than real time — a multi-hour recording can take many hours. `small`
-is the size that "just works" across the widest range of machines without a surprise OOM or a
-runaway CPU run, which is exactly what a zero-config default should do.
+Default: `ru`. Pass `auto` to let faster-whisper detect from the first 30 seconds. Risk
+(carried over from openai-whisper): forcing the wrong language doesn't error — it
+hallucinates a plausible-looking transcript in the forced language. If a transcript looks
+like coherent gibberish, suspect a wrong `--language` first.
 
-## Language
+ISO-639-1 codes: `ru`, `en`, `de`, `fr`, `es`, `it`, `uk`, `kk`, …
 
-`--language auto` (the default) lets whisper detect the spoken language from the first ~30
-seconds of audio. This is the safe choice.
+## VAD filtering
 
-**Risk of forcing the language (H-003):** passing `--language` forces whisper to decode as
-that language regardless of what is actually spoken. If you force the *wrong* language,
-whisper does not error — it **hallucinates / mistranscribes**, often "translating" or emitting
-plausible-looking garbage in the forced language. So force a language only when you are
-certain of the content (and want to skip a brief detection step or override a misdetection on
-very short clips). Codes are ISO-639-1, e.g. `ru`, `en`, `de`, `fr`, `es`, `uk`.
+On by default. Uses Silero VAD bundled with faster-whisper to drop non-speech segments
+before decoding — both faster and more accurate on long files with silences/music
+intros. Disable with `--no-vad` if VAD is mis-classifying quiet speech as silence
+(rare).
 
-If a transcript comes out as nonsense in an unexpected language, suspect a wrong forced
-`--language` first, and retry with `--language auto`.
+## Beam size
 
-## Long files
-
-For long recordings (lectures, hour-plus calls, podcasts):
-
-- Do a fast first pass with `--model base` (or `--model tiny` to just skim) before committing
-  a slow high-quality run; confirm the audio is what you expect.
-- On CPU, prefer `small`/`base`; `medium`/`large` on CPU can run for many hours. Warn the user
-  about expected runtime before starting a long high-model run.
-- For video, add `--keep-audio` to retain the extracted 16 kHz mono wav so you can re-run
-  different models/languages without re-extracting the audio each time.
+Default 5. The faster-whisper sweet spot for Russian. Larger values (10, 20) marginally
+improve accuracy at significant CPU cost; not worth it for routine work.
 
 ## Output-sanity guard (exit 4)
 
-whisper exits `0` even when it transcribed **nothing useful** — silent input, music, or pure
-tones produce an empty `.txt` or a hallucinated fragment with zero real segments. The script
-guards against this (H-002): after the run it checks that `.txt` has non-whitespace content
-**and** that the `.json` has at least one segment. If both fail it prints a `WARNING` and
-exits `4` instead of falsely reporting success. Treat exit `4` as "no speech detected — check
-that the input actually contains speech, or that the forced `--language` is correct."
+After transcription, voxscribe checks:
+
+1. `<stem>.txt` exists and is non-empty;
+2. at least one segment was emitted to `<stem>.segments.jsonl`.
+
+If both fail, voxscribe prints a `WARNING` and exits **4** instead of writing a misleading
+empty `.md` downstream. Common causes:
+
+- Audio is silent or below VAD threshold;
+- Wrong `--language` forced (model decoded nothing it considered valid speech);
+- Audio is music/SFX/non-speech (whisper occasionally hallucinates filler — VAD catches
+  most).
+
+## Engines (`--engine`)
+
+Two backends; pick by tradeoff.
+
+| `--engine` | Pipeline | Strengths | Weaknesses |
+|---|---|---|---|
+| `faster-whisper` (default) | transcribe → preprocess / (diarize + dialogify + sbert) | Russian sbert punctuation pass; bundled, no extra install; ~5 dependencies | Loose timestamp↔speaker alignment (250–500 ms) on dialogue mode; we maintain the diarization↔text glue |
+| `whisperx` | whisperx (faster-whisper + pyannote + forced alignment) in one call | Tight timestamp↔speaker alignment via wav2vec2; one upstream to track | Extra install (`pipx install whisperx`); separate gating for diarization model; no sbert punctuation pass |
+
+Switching engines does not change the file naming convention — both write `<stem>.txt`,
+`<stem>.json`, etc. The `--mode dialogue` path under `--engine whisperx` skips our
+diarize.py + dialogify.py and lets whisperx produce the speaker-labeled output directly;
+`--speakers` is not (yet) propagated to whisperx output.
+
+## Concurrency semaphore (`VOXSCRIBE_MAX_CONCURRENT`)
+
+Folder fan-out spawns N parallel subagents, each calling `transcribe.sh`. Default
+`VOXSCRIBE_MAX_CONCURRENT=2` caps the number of concurrent transcription processes via
+`flock` on lock files in `${TMPDIR:-/tmp}/voxscribe-cpu-slots/`. Excess subagents wait,
+then proceed in FIFO-ish order. Set to `0` to disable.
+
+`VOXSCRIBE_SLOT_TIMEOUT` (default 86400 sec) bounds the wait — beyond it a subagent
+exits 1 with a clear message rather than blocking the queue forever.
+
+## RAM warning
+
+At startup the script checks `MemAvailable` from `/proc/meminfo` (Linux only). If less
+than 8 GB (lecture) or 10 GB (dialogue) is free, prints `WARNING — only X GB RAM…`.
+Not fatal — meant to set expectations and suggest `--model medium` / `--model small`.
+
+## HF preflight (`--skip-hf-preflight`)
+
+Dialogue mode runs a 2-second HuggingFace auth check before kicking off the (potentially
+hour-long) transcription, so a missing `HF_TOKEN` or unaccepted-terms surface immediately.
+Pass `--skip-hf-preflight` only when:
+
+- the pyannote model is already downloaded into `~/.cache/huggingface/hub/`, AND
+- you're offline / behind a flaky proxy, AND
+- you're sure the cached weights match the diarization model version voxscribe expects.
+
+Otherwise the preflight is purely beneficial.
 
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
-| `0` | Success — a non-empty transcript was written. |
-| `1` | Usage / input error (missing argument, unknown option, input not found or unreadable). |
-| `2` | A required dependency is missing (`whisper`, `ffmpeg`, or `ffprobe` not in PATH). |
+| `0` | Success (or all-already-done in folder mode). |
+| `1` | Usage / input error (missing argument, unknown option, input not found, unknown `--mode`). |
+| `2` | Missing dependency (`ffmpeg`, `ffprobe`, `faster-whisper`, `pyannote.audio`, `transformers`, or `HF_TOKEN`). |
 | `3` | Input is a video with **no audio stream** to transcribe. |
 | `4` | Ran, but produced an empty / no-speech transcript (the output-sanity guard tripped). |
+| anything else | Forwarded exit code from whisper / pyannote / ffmpeg. |
 
-## Installation
+## Cover-art (mp3/m4a with embedded thumbnail)
 
-The script does a loud preflight check and tells you exactly what to install if something is
-missing. To set up:
-
-```bash
-# openai-whisper CLI (Python)
-pipx install openai-whisper        # or: pip install -U openai-whisper
-
-# ffmpeg + ffprobe (needed for video audio-extraction and stream probing)
-sudo apt install ffmpeg            # Debian/Ubuntu
-brew install ffmpeg                # macOS (Homebrew)
-```
-
-`whisper` will download model weights on first use; the first run of a new model size is
-slower while it fetches.
-
-## Supported environment
-
-**Supported environment (v1):** Linux with the `openai-whisper` CLI (and `ffmpeg`/`ffprobe`
-on `PATH`). GPU acceleration is optional and auto-detected; CPU-only works.
-
-**Known limitations:**
-
-- macOS is **not** an officially supported target in v1. The script may run under Homebrew
-  `ffmpeg` + `openai-whisper`, but it is untested there and the preflight only checks for the
-  three required binaries.
-- Alternative engines — `whisper.cpp` and `faster-whisper` — are **not** supported in v1. The
-  script invokes the `openai-whisper` CLI specifically; a different `whisper` binary on `PATH`
-  will fail loudly at the preflight or argument stage rather than silently misbehaving.
-- **CLI-flag drift:** the `openai-whisper` CLI has changed flag names and defaults across
-  releases (e.g. `--output_format`, `--fp16`, `--task`). The script targets current
-  `openai-whisper`. If a flag is rejected after an upgrade or on an unusually old/new build,
-  reconcile the script's `args` array against `whisper --help` for that version.
+ffprobe reports cover art as a video stream with `attached_pic=1`. voxscribe filters
+these out so a tagged podcast `.mp3` doesn't get wrongly routed through the video branch.
+A mp3 with no audio stream at all (unusual) would still trip exit 3 via the audio-stream
+check inside the video branch — but that case can't happen for a real audio file.
