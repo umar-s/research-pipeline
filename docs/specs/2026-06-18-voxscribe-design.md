@@ -39,9 +39,9 @@ research-pipeline/
 ├── README.md                            # +секция про voxscribe
 └── plugins/voxscribe/
     ├── .claude-plugin/plugin.json
+    ├── scripts/transcribe.sh           # H-006: в КОРНЕ плагина → ${CLAUDE_PLUGIN_ROOT}/scripts
     └── skills/voxscribe/
         ├── SKILL.md
-        ├── scripts/transcribe.sh
         └── references/options.md
 ```
 

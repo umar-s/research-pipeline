@@ -56,9 +56,11 @@ preflight, ffprobe-детект, ffmpeg-extract, device/VRAM-выбор, languag
 
 ---
 
-### Task 2: scripts/transcribe.sh (H-001/H-002/H-003/H-005)
+### Task 2: scripts/transcribe.sh (H-001/H-002/H-003/H-005/H-007/H-008)
 
-**Files:** Create `plugins/voxscribe/skills/voxscribe/scripts/transcribe.sh` (chmod +x)
+**Files:** Create `plugins/voxscribe/scripts/transcribe.sh` (chmod +x)
+**H-006:** скрипт лежит в КОРНЕ плагина (`plugins/voxscribe/scripts/`), НЕ в `skills/...` —
+тогда `${CLAUDE_PLUGIN_ROOT}/scripts/transcribe.sh` резолвится чисто (паттерн GTD planning-with-files).
 
 - [ ] **Step 1:** Создать скрипт ДОСЛОВНО:
 
@@ -103,13 +105,16 @@ mkdir -p -- "$OUTDIR"
 # Output basename is ALWAYS derived from the original input (not the temp wav)
 in_base="$(basename -- "$INPUT")"; STEM="${in_base%.*}"
 
-has_video="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_type -of csv=p=0 -- "$INPUT" 2>/dev/null || true)"
+# H-008: a "real" video stream is one whose attached_pic disposition is 0.
+# Cover-art / album-art in mp3/m4a is a video stream with attached_pic=1 and MUST be
+# treated as audio (otherwise every tagged podcast mp3 wrongly goes through ffmpeg).
+real_video="$(ffprobe -v error -select_streams v -show_entries stream_disposition=attached_pic -of csv=p=0 -- "$INPUT" 2>/dev/null | grep -c '^0$' || true)"
 
 TMP_DIR=""; cleanup() { [ -n "$TMP_DIR" ] && [ "$KEEP_AUDIO" -eq 0 ] && rm -rf -- "$TMP_DIR"; }
 trap cleanup EXIT
 
 AUDIO_IN="$INPUT"
-if [ -n "$has_video" ]; then
+if [ "${real_video:-0}" -gt 0 ]; then
   has_audio="$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_type -of csv=p=0 -- "$INPUT" 2>/dev/null || true)"
   [ -n "$has_audio" ] || die "video has no audio stream: $INPUT" 3
   TMP_DIR="$(mktemp -d)"
@@ -126,12 +131,16 @@ DEV="$DEVICE"
 if [ "$DEV" = auto ]; then
   DEV=cpu
   if command -v nvidia-smi >/dev/null 2>&1; then
+    # H-007: read free VRAM of the FIRST gpu; numeric-guard against [N/A]/empty/multi-line.
     free_mb="$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -dc '0-9' || true)"
-    need_mb="$(model_vram_mb "$MODEL")"
-    if [ -n "${free_mb:-}" ] && [ "${free_mb:-0}" -ge "$need_mb" ]; then DEV=cuda
-    else echo "voxscribe: GPU free ${free_mb:-0}MiB < ${need_mb}MiB for '$MODEL' -> CPU" >&2; fi
+    need_mb=$(( $(model_vram_mb "$MODEL") * 115 / 100 ))   # +15% headroom — avoid razor-thin flips
+    if [ -z "${free_mb:-}" ]; then
+      echo "voxscribe: could not read GPU VRAM (nvidia-smi returned non-numeric) -> CPU" >&2
+    elif [ "$free_mb" -ge "$need_mb" ]; then DEV=cuda
+    else echo "voxscribe: GPU free ${free_mb}MiB < ${need_mb}MiB needed for '$MODEL' -> CPU" >&2; fi
   fi
 fi
+echo "voxscribe: device=$DEV" >&2
 
 args=(--model "$MODEL" --device "$DEV" --output_format "$FORMATS" --output_dir "$OUTDIR" --task transcribe --verbose False)
 [ "$DEV" = cpu ] && args+=(--fp16 False)
@@ -158,7 +167,9 @@ echo "--- transcript ($STEM.txt) ---"
 cat -- "$TXT"
 ```
 
-- [ ] **Step 2:** `chmod +x plugins/voxscribe/skills/voxscribe/scripts/transcribe.sh`
+- [ ] **Step 2 (H-009):** `chmod +x plugins/voxscribe/scripts/transcribe.sh` **ДО** `git add`,
+  затем `git add` — git зафиксирует mode `100755`. Проверить: `git ls-files -s plugins/voxscribe/scripts/transcribe.sh`
+  начинается с `100755`.
 - [ ] **Step 3:** `bash -n` + (если есть) `shellcheck` → без ошибок.
 
 ---
@@ -183,12 +194,14 @@ invoke it, then report the output paths and transcript to the user.
 
 ## How to run
 
-Run the bundled script (make it executable once if needed):
+Resolve the bundled script's absolute path robustly, then run it via `bash` (works even
+without the exec bit). `${CLAUDE_PLUGIN_ROOT}` points at this plugin's root when set; the
+glob fallback covers `/plugin install` cache layouts when it is not:
 
-    bash "${CLAUDE_PLUGIN_ROOT}/skills/voxscribe/scripts/transcribe.sh" "<path-to-media>" [options]
-
-`${CLAUDE_PLUGIN_ROOT}` resolves to this plugin's directory. If unset, use the script's
-path relative to this SKILL.md: `skills/voxscribe/scripts/transcribe.sh`.
+    VOX="${CLAUDE_PLUGIN_ROOT:-}/scripts/transcribe.sh"
+    [ -f "$VOX" ] || VOX="$(ls "$HOME"/.claude/plugins/*/voxscribe/scripts/transcribe.sh \
+        "$HOME"/.claude/plugins/cache/*/voxscribe/*/scripts/transcribe.sh 2>/dev/null | head -1)"
+    bash "$VOX" "<path-to-media>" [options]
 
 The script auto-detects audio vs video, picks GPU or CPU by free VRAM, auto-detects the
 language, and writes results next to the input file.
