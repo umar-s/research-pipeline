@@ -11,7 +11,7 @@ die() { echo "voxscribe: $*" >&2; exit "${2:-1}"; }
 MODEL=small; LANGUAGE=auto; DEVICE=auto; OUTDIR=""; FORMATS=all; KEEP_AUDIO=0; INPUT=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,6p' "$0"; exit 0 ;;
     --model) MODEL="${2:?}"; shift 2 ;;
     --language) LANGUAGE="${2:?}"; shift 2 ;;
     --device) DEVICE="${2:?}"; shift 2 ;;
