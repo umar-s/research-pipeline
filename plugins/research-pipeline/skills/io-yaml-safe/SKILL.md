@@ -106,7 +106,7 @@ When YAML validation fails, invoke the yaml-repair skill:
 2. If invalid:
    a. Extract parse error message
    b. Invoke yaml-repair skill:
-      Skill(skill: "yaml-repair", args: |
+      Skill(skill: "research-pipeline:yaml-repair", args: |
         broken_yaml: {raw_yaml}
         parse_error: {error_message}
         attempt: 1

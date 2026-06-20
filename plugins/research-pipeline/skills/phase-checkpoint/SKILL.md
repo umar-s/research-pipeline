@@ -130,7 +130,7 @@ Phase N completes → write artifacts → invoke phase-checkpoint
 Example in Phase 2:
 ```
 # After all researchers complete
-Skill(skill: "phase-checkpoint", args: |
+Skill(skill: "research-pipeline:phase-checkpoint", args: |
   session_id: {session}
   phase_id: 2
   phase_name: research

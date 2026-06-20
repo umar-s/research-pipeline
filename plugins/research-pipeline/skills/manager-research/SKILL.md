@@ -51,7 +51,7 @@ Before starting:
 
 **Orchestration:**
 ```
-Skill(skill: "research-planner", args: "{topic}")
+Skill(skill: "research-pipeline:research-planner", args: "{topic}")
 ```
 
 **Output:** `artifacts/{session}/plan.yaml`
@@ -76,7 +76,7 @@ settings:
 
 **Checkpoint:**
 ```
-Skill(skill: "phase-checkpoint", args: |
+Skill(skill: "research-pipeline:phase-checkpoint", args: |
   session_id: {session}
   phase_id: 1
   phase_name: planning
@@ -162,7 +162,7 @@ Else:
 
 **Checkpoint:**
 ```
-Skill(skill: "phase-checkpoint", args: |
+Skill(skill: "research-pipeline:phase-checkpoint", args: |
   session_id: {session}
   phase_id: 2
   phase_name: research
@@ -189,7 +189,7 @@ condition: "count(aspects/*.yaml) >= 3"
 
 **Orchestration:**
 ```
-Skill(skill: "synthesis")
+Skill(skill: "research-pipeline:synthesis")
 
 # Synthesis skill reads from artifacts/{session}/aspects/
 # Writes to artifacts/{session}/synthesis.yaml
@@ -233,7 +233,7 @@ quality_metrics:
 
 **Checkpoint:**
 ```
-Skill(skill: "phase-checkpoint", args: |
+Skill(skill: "research-pipeline:phase-checkpoint", args: |
   session_id: {session}
   phase_id: 3
   phase_name: synthesis
@@ -259,7 +259,7 @@ condition: "synthesis.yaml"
 
 **Orchestration:**
 ```
-Skill(skill: "quality-gate")
+Skill(skill: "research-pipeline:quality-gate")
 
 quality = Read("artifacts/{session}/quality.yaml")
 
@@ -292,7 +292,7 @@ recommendations: string[]
 
 **Checkpoint:**
 ```
-Skill(skill: "phase-checkpoint", args: |
+Skill(skill: "research-pipeline:phase-checkpoint", args: |
   session_id: {session}
   phase_id: 4
   phase_name: quality_gate
@@ -337,7 +337,7 @@ Task(
 
 **Checkpoint:**
 ```
-Skill(skill: "phase-checkpoint", args: |
+Skill(skill: "research-pipeline:phase-checkpoint", args: |
   session_id: {session}
   phase_id: 5
   phase_name: report
@@ -432,7 +432,7 @@ error: "{error_message}"
 
 Use resume-checkpoint skill to restore to previous phase:
 ```
-Skill(skill: "resume-checkpoint", args: |
+Skill(skill: "research-pipeline:resume-checkpoint", args: |
   session_id: {session}
   target_phase: {phase_to_restore_to}
 )

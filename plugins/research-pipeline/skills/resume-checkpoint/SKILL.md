@@ -165,7 +165,7 @@ On phase failure:
 
 Manual invocation:
 ```
-Skill(skill: "resume-checkpoint", args: |
+Skill(skill: "research-pipeline:resume-checkpoint", args: |
   session_id: research_20260130_abc
   target_phase: 2
 )

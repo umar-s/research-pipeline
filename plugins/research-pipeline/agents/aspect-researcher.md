@@ -12,10 +12,8 @@ skills:
   required:
     - silence-protocol
     - io-yaml-safe
-  contextual:
-    - tier-weights
-    - recency-weights
-    - slop-check
+  # tier-weights / recency-weights / slop-check are NOT separate skills — the
+  # ranking and slop-detection tables live inline in the agent body below.
 permissions:
   file_write: true
   web_search: true
