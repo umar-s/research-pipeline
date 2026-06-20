@@ -1,6 +1,6 @@
 {
   "name": "research-pipeline",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Multi-phase parallel research pipeline with source tiering, slop detection, quality gates, and grounded report generation. Decomposes a topic into 3-7 aspects, researches them in parallel, synthesizes, and produces a fully-cited final report.",
   "author": {
     "name": "Sergei",

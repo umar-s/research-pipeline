@@ -4,15 +4,15 @@
     "name": "umar-s"
   },
   "metadata": {
-    "description": "Multi-phase parallel research pipeline for Claude Code",
-    "version": "1.0.0"
+    "description": "Multi-phase parallel research pipeline + Russian-first audio/video transcription for Claude Code",
+    "version": "1.1.0"
   },
   "plugins": [
     {
       "name": "research-pipeline",
       "source": "./plugins/research-pipeline",
       "description": "Multi-phase parallel research pipeline — decompose topic → research aspects in parallel → synthesize → quality gate → grounded report. Includes source tiering, slop detection, git-based checkpointing, and WebSearch/Exa backends.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Sergei",
         "email": "sergei.bitsmedia@gmail.com"
