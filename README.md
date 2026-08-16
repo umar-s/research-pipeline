@@ -1,7 +1,7 @@
 # research-pipeline marketplace
 
-[![research-pipeline](https://img.shields.io/github/v/tag/umar-s/research-pipeline?filter=research-pipeline-v*&label=research-pipeline&color=0b7285)](https://github.com/umar-s/research-pipeline/releases?q=research-pipeline)
-[![voxscribe](https://img.shields.io/github/v/tag/umar-s/research-pipeline?filter=voxscribe-v*&label=voxscribe&color=0b7285)](https://github.com/umar-s/research-pipeline/releases?q=voxscribe)
+[![research-pipeline](https://img.shields.io/github/v/tag/umar-s/research-pipeline?filter=research-pipeline-v*&label=latest&color=0b7285)](https://github.com/umar-s/research-pipeline/releases?q=research-pipeline)
+[![voxscribe](https://img.shields.io/github/v/tag/umar-s/research-pipeline?filter=voxscribe-v*&label=latest&color=0b7285)](https://github.com/umar-s/research-pipeline/releases?q=voxscribe)
 [![changelog](https://img.shields.io/badge/changelog-md-0b7285)](CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-MIT-0b7285)](LICENSE)
 
