@@ -1,5 +1,10 @@
 # research-pipeline marketplace
 
+[![research-pipeline](https://img.shields.io/github/v/tag/umar-s/research-pipeline?filter=research-pipeline-v*&label=research-pipeline&color=0b7285)](https://github.com/umar-s/research-pipeline/releases?q=research-pipeline)
+[![voxscribe](https://img.shields.io/github/v/tag/umar-s/research-pipeline?filter=voxscribe-v*&label=voxscribe&color=0b7285)](https://github.com/umar-s/research-pipeline/releases?q=voxscribe)
+[![changelog](https://img.shields.io/badge/changelog-md-0b7285)](CHANGELOG.md)
+[![license](https://img.shields.io/badge/license-MIT-0b7285)](LICENSE)
+
 A Claude Code **marketplace** that ships two plugins:
 
 - **[research-pipeline](#research-pipeline)** — multi-phase parallel research: decompose a topic into independent aspects, research them in parallel, synthesize, quality-gate, and produce a fully-cited final report.
